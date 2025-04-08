@@ -94,11 +94,11 @@ class MessageController:
         before_timestamp = before_timestamp
         page = page
         limit = limit
-        # Fetch messages from the database
-        messages = []
 
-        self.cassandra_client.execute(
-            "SELECT * FROM messages WHERE conversation_id = %s AND timestamp < %s LIMIT %s OFFSET %s",
-            (conversation_id, before_timestamp, limit, (page - 1) * limit)
+        return await self.message_model.get_messages_before_timestamp(
+            conversation_id=conversation_id,
+            before_timestamp=before_timestamp,
+            page=page,
+            limit=limit
         )
         

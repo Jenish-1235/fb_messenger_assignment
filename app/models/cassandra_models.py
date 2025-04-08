@@ -5,6 +5,7 @@ Students should implement these models based on their database schema design.
 import uuid
 from datetime import datetime
 from typing import List, Dict, Any, Optional
+from cassandra.util import uuid_from_time, unix_time_from_uuid1
 
 from app.db.cassandra_client import cassandra_client
 
@@ -64,7 +65,7 @@ class MessageModel:
                 "id": str(row.get('message_id')),
                 "sender_id": row.get('sender_id'),
                 "receiver_id": row.get('recipient_id'),
-                "created_at": str(row.get('created_at')),
+                "created_at": str(unix_time_from_uuid1(row.get('message_id'))),
                 "conversation_id": str(row.get('conversation_id')),
                 "content": row.get('message_text'),
             }
@@ -87,14 +88,47 @@ class MessageModel:
         }
     
     @staticmethod
-    async def get_messages_before_timestamp(*args, **kwargs):
+    async def get_messages_before_timestamp(conversation_id: str, before_timestamp: datetime, page: int, limit: int):
         """
         Get messages before a timestamp with pagination.
         
         Students should decide how to implement filtering by timestamp with pagination.
         """
-        # This is a stub - students will implement the actual logic
-        raise NotImplementedError("This method needs to be implemented")
+
+        time_stamp = uuid_from_time(before_timestamp)
+        query = """
+        SELECT * FROM messages WHERE conversation_id = %s AND message_id < %s
+        """
+        rows = cassandra_client.execute(query, (conversation_id, time_stamp))
+        
+        all_messages = []
+        for row in rows:
+            message = {
+                "id": str(row.get('message_id')),
+                "sender_id": row.get('sender_id'),
+                "receiver_id": row.get('recipient_id'),
+                "created_at": str(unix_time_from_uuid1(row.get('message_id'))),
+                "conversation_id": str(row.get('conversation_id')),
+                "content": row.get('message_text'),
+            }
+            all_messages.append(message)
+
+        # Sort messages by time descending (latest first)
+        all_messages.sort(key=lambda msg: msg["created_at"], reverse=True)
+
+        # Manual pagination
+        total = len(all_messages)
+        start = (page - 1) * limit
+        end = start + limit
+        paginated_messages = all_messages[start:end]
+
+        return {
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "data": paginated_messages
+        }
+        
 
 
 class ConversationModel:
