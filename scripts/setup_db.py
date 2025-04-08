@@ -48,6 +48,7 @@ def create_keyspace(session):
     WITH REPLICATION = {{ 'class': 'SimpleStrategy', 'replication_factor': 3 }};
     """
     session.execute(query)
+    session.set_keyspace(CASSANDRA_KEYSPACE)
     logger.info(f"Keyspace {CASSANDRA_KEYSPACE} is ready.")
 
 def create_tables(session):
@@ -63,7 +64,40 @@ def create_tables(session):
     # - What tables are needed to implement the required APIs?
     # - What should be the primary keys and clustering columns?
     # - How will you handle pagination and time-based queries?
-    
+
+    session.set_keyspace(CASSANDRA_KEYSPACE)
+
+    user_table_query = f"""
+    CREATE TABLE IF NOT EXISTS users (
+    user_id int PRIMARY KEY
+    )
+    """
+    session.execute(user_table_query)
+
+    conversation_table_query = f"""
+    CREATE TABLE IF NOT EXISTS user_conversations (
+    user_id int,
+    last_message_time timeuuid,
+    conversation_id text,
+    receiver_id int,
+    last_message text,
+    PRIMARY KEY (user_id, last_message_time, conversation_id)
+    ) WITH CLUSTERING ORDER BY (last_message_time DESC);
+    """
+    session.execute(conversation_table_query)
+
+    message_table_query = f"""
+    CREATE TABLE IF NOT EXISTS messages (
+    conversation_id text,
+    message_id timeuuid,
+    sender_id int,
+    recipient_id int,
+    message_text text,
+    PRIMARY KEY (conversation_id, message_id)
+    ) WITH CLUSTERING ORDER BY (message_id DESC);
+    """
+
+    session.execute(message_table_query)
     logger.info("Tables created successfully.")
 
 def main():
