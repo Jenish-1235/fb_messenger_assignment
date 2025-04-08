@@ -145,14 +145,41 @@ class ConversationModel:
     # TODO: Implement the following methods
     
     @staticmethod
-    async def get_user_conversations(*args, **kwargs):
+    async def get_user_conversations(user_id: int, page: int = 1, limit: int = 20):
         """
         Get conversations for a user with pagination.
         
         Students should decide what parameters are needed and how to implement pagination.
         """
-        # This is a stub - students will implement the actual logic
-        raise NotImplementedError("This method needs to be implemented")
+
+        query = """
+        SELECT * FROM user_conversations WHERE user_id = %s
+        """
+        rows = cassandra_client.execute(query, (user_id,))
+        print(f"Rows: {rows[0]}")
+        all_conversations = []
+        for row in rows:
+            conversation = {
+                "id": str(row.get('conversation_id')),
+                "user1_id": row.get('user_id'),
+                "user2_id": row.get('receiver_id'),
+                "last_message_at": str(unix_time_from_uuid1(row.get('last_message_time'))),
+                "last_message_content": row.get('last_message'),
+            }
+            all_conversations.append(conversation)
+        # Sort conversations by last message time descending (latest first) 
+        all_conversations.sort(key=lambda conv: conv["last_message_at"], reverse=True)
+        # Manual pagination
+        total = len(all_conversations)
+        start = (page - 1) * limit
+        end = start + limit
+        paginated_conversations = all_conversations[start:end]
+        return {
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "data": paginated_conversations
+        }
     
     @staticmethod
     async def get_conversation(*args, **kwargs):
