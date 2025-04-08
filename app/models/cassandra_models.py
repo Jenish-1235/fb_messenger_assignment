@@ -5,6 +5,7 @@ Students should implement these models based on their database schema design.
 import uuid
 from datetime import datetime
 from typing import List, Dict, Any, Optional
+from cassandra.util import uuid_from_time, unix_time_from_uuid1
 
 from app.db.cassandra_client import cassandra_client
 
@@ -22,34 +23,112 @@ class MessageModel:
     # TODO: Implement the following methods
     
     @staticmethod
-    async def create_message(*args, **kwargs):
+    async def create_message(conversation_id: str, sender_id: int, recipient_id: int, message_text: str):
         """
-        Create a new message.
+        Create a new message and return it in the response format.
+        """
+        message_id = uuid.uuid1()  # time-based UUID (for ordering)
         
-        Students should decide what parameters are needed based on their schema design.
+        query = """
+        INSERT INTO messages (conversation_id, message_id, sender_id, recipient_id, message_text)
+        VALUES (%s, %s, %s, %s, %s)
         """
-        # This is a stub - students will implement the actual logic
-        raise NotImplementedError("This method needs to be implemented")
+        params = (conversation_id, message_id, sender_id, recipient_id, message_text)
+        cassandra_client.execute(query, params)
+
+        return {
+            "id": str(message_id),
+            "sender_id": sender_id,
+            "receiver_id": recipient_id,
+            "created_at": str(datetime.now()),
+            "conversation_id": conversation_id,
+            "content": message_text,
+        }
+    pass
     
     @staticmethod
-    async def get_conversation_messages(*args, **kwargs):
+    async def get_conversation_messages(conversation_id: str, page: int, limit: int):
         """
         Get messages for a conversation with pagination.
-        
-        Students should decide what parameters are needed and how to implement pagination.
+        Cassandra doesn't support OFFSET, so we fetch all and slice in memory.
+        Best for small conversations or prototyping.
         """
-        # This is a stub - students will implement the actual logic
-        raise NotImplementedError("This method needs to be implemented")
+        query = """
+        SELECT * FROM messages WHERE conversation_id = %s
+        """
+        rows = cassandra_client.execute(query, (conversation_id,))
+        
+        all_messages = []
+        for row in rows:
+            print(f"Row: {row}")
+            message = {
+                "id": str(row.get('message_id')),
+                "sender_id": row.get('sender_id'),
+                "receiver_id": row.get('recipient_id'),
+                "created_at": str(unix_time_from_uuid1(row.get('message_id'))),
+                "conversation_id": str(row.get('conversation_id')),
+                "content": row.get('message_text'),
+            }
+            all_messages.append(message)
+
+        # Sort messages by time descending (latest first)
+        all_messages.sort(key=lambda msg: msg["created_at"], reverse=True)
+
+        # Manual pagination
+        total = len(all_messages)
+        start = (page - 1) * limit
+        end = start + limit
+        paginated_messages = all_messages[start:end]
+
+        return {
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "data": paginated_messages
+        }
     
     @staticmethod
-    async def get_messages_before_timestamp(*args, **kwargs):
+    async def get_messages_before_timestamp(conversation_id: str, before_timestamp: datetime, page: int, limit: int):
         """
         Get messages before a timestamp with pagination.
         
         Students should decide how to implement filtering by timestamp with pagination.
         """
-        # This is a stub - students will implement the actual logic
-        raise NotImplementedError("This method needs to be implemented")
+
+        time_stamp = uuid_from_time(before_timestamp)
+        query = """
+        SELECT * FROM messages WHERE conversation_id = %s AND message_id < %s
+        """
+        rows = cassandra_client.execute(query, (conversation_id, time_stamp))
+        
+        all_messages = []
+        for row in rows:
+            message = {
+                "id": str(row.get('message_id')),
+                "sender_id": row.get('sender_id'),
+                "receiver_id": row.get('recipient_id'),
+                "created_at": str(unix_time_from_uuid1(row.get('message_id'))),
+                "conversation_id": str(row.get('conversation_id')),
+                "content": row.get('message_text'),
+            }
+            all_messages.append(message)
+
+        # Sort messages by time descending (latest first)
+        all_messages.sort(key=lambda msg: msg["created_at"], reverse=True)
+
+        # Manual pagination
+        total = len(all_messages)
+        start = (page - 1) * limit
+        end = start + limit
+        paginated_messages = all_messages[start:end]
+
+        return {
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "data": paginated_messages
+        }
+        
 
 
 class ConversationModel:
