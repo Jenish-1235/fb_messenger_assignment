@@ -43,7 +43,11 @@ def create_keyspace(session):
     
     # TODO: Students should implement keyspace creation
     # Hint: Consider replication strategy and factor for a distributed database
-    
+    query = f"""
+    CREATE KEYSPACE IF NOT EXISTS {CASSANDRA_KEYSPACE}
+    WITH REPLICATION = {{ 'class': 'SimpleStrategy', 'replication_factor': 3 }};
+    """
+    session.execute(query)
     logger.info(f"Keyspace {CASSANDRA_KEYSPACE} is ready.")
 
 def create_tables(session):
