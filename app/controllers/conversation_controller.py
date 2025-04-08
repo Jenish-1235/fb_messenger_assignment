@@ -36,7 +36,7 @@ class ConversationController:
         
         return await self.conversation_model.get_user_conversations(user_id, page, limit)
     
-    async def get_conversation(self, conversation_id: int) -> ConversationResponse:
+    async def get_conversation(self, conversation_id: str) -> ConversationResponse:
         """
         Get a specific conversation by ID
         
@@ -50,4 +50,4 @@ class ConversationController:
             HTTPException: If conversation not found or access denied
         """
         # This is a stub - students will implement the actual logic
-        self.conversation_model.get_conversation(conversation_id)
+        return await self.conversation_model.get_conversation(conversation_id)

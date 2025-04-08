@@ -182,14 +182,31 @@ class ConversationModel:
         }
     
     @staticmethod
-    async def get_conversation(*args, **kwargs):
+    async def get_conversation(conversation_id:str):
         """
         Get a conversation by ID.
         
         Students should decide what parameters are needed and what data to return.
         """
-        # This is a stub - students will implement the actual logic
-        raise NotImplementedError("This method needs to be implemented")
+
+        query = """
+        SELECT * FROM messages 
+        WHERE conversation_id = %s 
+        ORDER BY message_id DESC 
+        LIMIT 1
+        """
+        rows = cassandra_client.execute(query, (conversation_id,))
+        for row in rows:
+            print(f"Row: {row}")
+            return {
+                "id": str(row.get("conversation_id")),
+                "user1_id": row.get("sender_id"),
+                "user2_id": row.get("recipient_id"),
+                "last_message_at": str(unix_time_from_uuid1(row.get("message_id"))),
+                "conversation_id": row.get("conversation_id"),
+                "last_message_content": str(row.get('message_text')),
+            }
+        return None
     
     @staticmethod
     async def create_or_get_conversation(*args, **kwargs):
