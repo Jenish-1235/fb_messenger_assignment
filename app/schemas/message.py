@@ -10,11 +10,11 @@ class MessageCreate(MessageBase):
     receiver_id: int = Field(..., description="ID of the receiver")
 
 class MessageResponse(MessageBase):
-    id: int = Field(..., description="Unique ID of the message")
+    id: str = Field(..., description="Unique ID of the message")
     sender_id: int = Field(..., description="ID of the sender")
     receiver_id: int = Field(..., description="ID of the receiver")
-    created_at: datetime = Field(..., description="Timestamp when message was created")
-    conversation_id: int = Field(..., description="ID of the conversation")
+    created_at: str = Field(..., description="Timestamp when message was created")
+    conversation_id: str = Field(..., description="ID of the conversation")
 
 class PaginatedMessageRequest(BaseModel):
     page: int = Field(1, description="Page number for pagination")

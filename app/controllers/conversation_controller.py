@@ -1,4 +1,5 @@
 from fastapi import HTTPException, status
+from app.models.cassandra_models import ConversationModel
 
 from app.schemas.conversation import ConversationResponse, PaginatedConversationResponse
 
@@ -7,6 +8,9 @@ class ConversationController:
     Controller for handling conversation operations
     This is a stub that students will implement
     """
+
+    def __init__(self):
+        self.conversation_model = ConversationModel()
     
     async def get_user_conversations(
         self, 
@@ -29,12 +33,10 @@ class ConversationController:
             HTTPException: If user not found or access denied
         """
         # This is a stub - students will implement the actual logic
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Method not implemented"
-        )
+        
+        return await self.conversation_model.get_user_conversations(user_id, page, limit)
     
-    async def get_conversation(self, conversation_id: int) -> ConversationResponse:
+    async def get_conversation(self, conversation_id: str) -> ConversationResponse:
         """
         Get a specific conversation by ID
         
@@ -48,7 +50,4 @@ class ConversationController:
             HTTPException: If conversation not found or access denied
         """
         # This is a stub - students will implement the actual logic
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Method not implemented"
-        ) 
+        return await self.conversation_model.get_conversation(conversation_id)
