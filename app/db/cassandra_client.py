@@ -44,10 +44,8 @@ class CassandraClient:
         """Connect to the Cassandra cluster."""
         try:
             self.cluster = Cluster([self.host])
-            try:
-                self.session = self.cluster.connect(self.keyspace)
-            except Exception as e:
-                self.session = self.cluster.connect()
+            self.session = self.cluster.connect()
+            self.session.set_keyspace(self.keyspace)
             self.session.row_factory = dict_factory
             logger.info(f"Connected to Cassandra at {self.host}:{self.port}, keyspace: {self.keyspace}")
         except Exception as e:

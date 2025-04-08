@@ -1,6 +1,8 @@
 from typing import Optional
 from datetime import datetime
 from fastapi import HTTPException, status
+from app.db.cassandra_client import cassandra_client
+from app.models.cassandra_models import MessageModel
 
 from app.schemas.message import MessageCreate, MessageResponse, PaginatedMessageResponse
 
@@ -9,6 +11,9 @@ class MessageController:
     Controller for handling message operations
     This is a stub that students will implement
     """
+
+    def __init__(self):
+        self.message_model = MessageModel() # Placeholder for Cassandra client
     
     async def send_message(self, message_data: MessageCreate) -> MessageResponse:
         """
@@ -24,9 +29,13 @@ class MessageController:
             HTTPException: If message sending fails
         """
         # This is a stub - students will implement the actual logic
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Method not implemented"
+
+        conversation_id = str(message_data.sender_id) + "_" + str(message_data.receiver_id)
+        return await self.message_model.create_message(
+            conversation_id=conversation_id,
+            sender_id=message_data.sender_id,
+            recipient_id=message_data.receiver_id,
+            message_text=message_data.content
         )
     
     async def get_conversation_messages(
@@ -50,10 +59,19 @@ class MessageController:
             HTTPException: If conversation not found or access denied
         """
         # This is a stub - students will implement the actual logic
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Method not implemented"
+        
+        conversation_id = conversation_id
+        page = page
+        limit = limit
+        # Fetch messages from the database
+
+        messages = []  # Placeholder for fetched messages
+
+        self.cassandra_client.execute(
+            "SELECT * FROM messages WHERE conversation_id = %s LIMIT %s OFFSET %s",
+            (conversation_id, limit, (page - 1) * limit)
         )
+
     
     async def get_messages_before_timestamp(
         self, 
@@ -78,7 +96,15 @@ class MessageController:
             HTTPException: If conversation not found or access denied
         """
         # This is a stub - students will implement the actual logic
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Method not implemented"
-        ) 
+        conversation_id = conversation_id
+        before_timestamp = before_timestamp
+        page = page
+        limit = limit
+        # Fetch messages from the database
+        messages = []
+
+        self.cassandra_client.execute(
+            "SELECT * FROM messages WHERE conversation_id = %s AND timestamp < %s LIMIT %s OFFSET %s",
+            (conversation_id, before_timestamp, limit, (page - 1) * limit)
+        )
+        

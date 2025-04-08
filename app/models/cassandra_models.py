@@ -22,17 +22,34 @@ class MessageModel:
     # TODO: Implement the following methods
     
     @staticmethod
-    async def create_message(*args, **kwargs):
+    async def create_message(conversation_id: str, sender_id: int, recipient_id: int, message_text: str):
         """
-        Create a new message.
+        Create a new message and return it in the response format.
+        """
+        message_id = uuid.uuid1()  # time-based UUID (for ordering)
         
-        Students should decide what parameters are needed based on their schema design.
+        query = """
+        INSERT INTO messages (conversation_id, message_id, sender_id, recipient_id, message_text)
+        VALUES (%s, %s, %s, %s, %s)
         """
-        # This is a stub - students will implement the actual logic
-        raise NotImplementedError("This method needs to be implemented")
+        params = (conversation_id, message_id, sender_id, recipient_id, message_text)
+        cassandra_client.execute(query, params)
+
+        timestamp = datetime.fromtimestamp((message_id.time - 0x01b21dd213814000) / 1e7)
+
+
+        return {
+            "id": str(message_id),
+            "sender_id": sender_id,
+            "receiver_id": recipient_id,
+            "created_at": str(datetime.now()),
+            "conversation_id": conversation_id,
+            "content": message_text,
+        }
+
     
     @staticmethod
-    async def get_conversation_messages(*args, **kwargs):
+    async def get_conversation_messages(*args, **kwargs) -> List[Dict[str, Any]]:
         """
         Get messages for a conversation with pagination.
         
