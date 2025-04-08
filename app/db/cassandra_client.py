@@ -44,10 +44,7 @@ class CassandraClient:
         for attempt in range(1, retries + 1):
             try:
                 self.cluster = Cluster([self.host], port=self.port)
-                try:
-                    self.session = self.cluster.connect(self.keyspace)
-                except Exception as e:
-                    self.session = self.cluster.connect()
+                self.session = self.cluster.connect(self.keyspace)
                 self.session.row_factory = dict_factory
                 logger.info(f"Connected to Cassandra at {self.host}:{self.port}, keyspace: {self.keyspace}")
                 return
