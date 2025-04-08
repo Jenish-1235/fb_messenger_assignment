@@ -35,9 +35,6 @@ class MessageModel:
         params = (conversation_id, message_id, sender_id, recipient_id, message_text)
         cassandra_client.execute(query, params)
 
-        timestamp = datetime.fromtimestamp((message_id.time - 0x01b21dd213814000) / 1e7)
-
-
         return {
             "id": str(message_id),
             "sender_id": sender_id,
@@ -46,17 +43,48 @@ class MessageModel:
             "conversation_id": conversation_id,
             "content": message_text,
         }
-
+    pass
     
     @staticmethod
-    async def get_conversation_messages(*args, **kwargs) -> List[Dict[str, Any]]:
+    async def get_conversation_messages(conversation_id: str, page: int, limit: int):
         """
         Get messages for a conversation with pagination.
-        
-        Students should decide what parameters are needed and how to implement pagination.
+        Cassandra doesn't support OFFSET, so we fetch all and slice in memory.
+        Best for small conversations or prototyping.
         """
-        # This is a stub - students will implement the actual logic
-        raise NotImplementedError("This method needs to be implemented")
+        query = """
+        SELECT * FROM messages WHERE conversation_id = %s
+        """
+        rows = cassandra_client.execute(query, (conversation_id,))
+        
+        all_messages = []
+        for row in rows:
+            print(f"Row: {row}")
+            message = {
+                "id": str(row.get('message_id')),
+                "sender_id": row.get('sender_id'),
+                "receiver_id": row.get('recipient_id'),
+                "created_at": str(row.get('created_at')),
+                "conversation_id": str(row.get('conversation_id')),
+                "content": row.get('message_text'),
+            }
+            all_messages.append(message)
+
+        # Sort messages by time descending (latest first)
+        all_messages.sort(key=lambda msg: msg["created_at"], reverse=True)
+
+        # Manual pagination
+        total = len(all_messages)
+        start = (page - 1) * limit
+        end = start + limit
+        paginated_messages = all_messages[start:end]
+
+        return {
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "data": paginated_messages
+        }
     
     @staticmethod
     async def get_messages_before_timestamp(*args, **kwargs):

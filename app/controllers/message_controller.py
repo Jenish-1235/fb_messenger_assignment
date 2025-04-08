@@ -40,7 +40,7 @@ class MessageController:
     
     async def get_conversation_messages(
         self, 
-        conversation_id: int, 
+        conversation_id: str, 
         page: int = 1, 
         limit: int = 20
     ) -> PaginatedMessageResponse:
@@ -60,16 +60,10 @@ class MessageController:
         """
         # This is a stub - students will implement the actual logic
         
-        conversation_id = conversation_id
-        page = page
-        limit = limit
-        # Fetch messages from the database
-
-        messages = []  # Placeholder for fetched messages
-
-        self.cassandra_client.execute(
-            "SELECT * FROM messages WHERE conversation_id = %s LIMIT %s OFFSET %s",
-            (conversation_id, limit, (page - 1) * limit)
+        return await self.message_model.get_conversation_messages(
+            conversation_id=conversation_id,
+            page=page,
+            limit=limit
         )
 
     

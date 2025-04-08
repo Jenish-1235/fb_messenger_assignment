@@ -23,7 +23,7 @@ async def send_message(
 
 @router.get("/conversation/{conversation_id}", response_model=PaginatedMessageResponse)
 async def get_conversation_messages(
-    conversation_id: int = Path(..., description="ID of the conversation"),
+    conversation_id: str = Path(..., description="ID of the conversation"),
     page: int = Query(1, description="Page number"),
     limit: int = Query(20, description="Number of messages per page"),
     message_controller: MessageController = Depends()
