@@ -7,7 +7,7 @@ import uuid
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import logging
-
+import time
 from cassandra.cluster import Cluster, Session
 from cassandra.auth import PlainTextAuthProvider
 from cassandra.query import SimpleStatement, dict_factory
@@ -40,16 +40,22 @@ class CassandraClient:
         
         self._initialized = True
     
-    def connect(self) -> None:
-        """Connect to the Cassandra cluster."""
-        try:
-            self.cluster = Cluster([self.host])
-            self.session = self.cluster.connect(self.keyspace)
-            self.session.row_factory = dict_factory
-            logger.info(f"Connected to Cassandra at {self.host}:{self.port}, keyspace: {self.keyspace}")
-        except Exception as e:
-            logger.error(f"Failed to connect to Cassandra: {str(e)}")
-            raise
+    def connect(self, retries: int = 10, delay: int = 5) -> None:
+        for attempt in range(1, retries + 1):
+            try:
+                self.cluster = Cluster([self.host], port=self.port)
+                self.session = self.cluster.connect()
+                self.session.row_factory = dict_factory
+                logger.info(f"Connected to Cassandra at {self.host}:{self.port}, keyspace: {self.keyspace}")
+                return
+            except Exception as e:
+                logger.warning(f"[Attempt {attempt}/{retries}] Cassandra connection failed: {e}")
+                if attempt < retries:
+                    time.sleep(delay)
+                else:
+                    logger.error("Max retries reached. Could not connect to Cassandra.")
+                    raise
+
     
     def close(self) -> None:
         """Close the Cassandra connection."""
