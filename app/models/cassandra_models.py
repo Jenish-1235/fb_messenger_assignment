@@ -130,7 +130,7 @@ class ConversationModel:
     @staticmethod
     async def get_user_conversations(user_id: int, page: int = 1, limit: int = 20):
         """
-        Fetches all conversations where the given user_id is the sender (first part of conversation_id).
+        Fetches all conversations where the given user_id.
         Keeps only the latest conversation per receiver.
         """
 
@@ -142,41 +142,27 @@ class ConversationModel:
         conversations_map = {}
 
         for row in rows:
-            conversation_id = row.get("conversation_id")
-
-            # Only consider conversations that start with this user's ID
-            if not conversation_id.startswith(f"{user_id}_"):
-                continue
-
             receiver_id = row.get("receiver_id")
             last_message_time = row.get("last_message_time")
 
             # Check if we already have a conversation with this receiver_id
             if receiver_id not in conversations_map or last_message_time > conversations_map[receiver_id]["last_message_time"]:
                 conversations_map[receiver_id] = {
-                    "id": conversation_id,
+                    "id": row.get("conversation_id"),
                     "user1_id": user_id,
                     "user2_id": receiver_id,
                     "last_message_content": row.get("last_message"),
                     "last_message_time": last_message_time,
                     "last_message_at": str(unix_time_from_uuid1(last_message_time)),
                 }
-
-        # Convert to list and sort by latest message
-        conversations = list(conversations_map.values())
-        conversations.sort(key=lambda x: x["last_message_time"], reverse=True)
-
-        # Pagination
-        total = len(conversations)
-        start = (page - 1) * limit
-        end = start + limit
-        paginated = conversations[start:end]
-
+         
+        sorted_conversations = sorted(conversations_map.values(), key=lambda x: x["last_message_time"], reverse=True)
+        start, end = (page - 1) * limit, page * limit
         return {
-            "total": total,
+            "total": len(sorted_conversations),
             "page": page,
             "limit": limit,
-            "data": paginated
+            "data": sorted_conversations[start:end]
         }
 
 
@@ -184,8 +170,6 @@ class ConversationModel:
     async def get_conversation(conversation_id:str):
         """
         Get a conversation by ID.
-        
-        Students should decide what parameters are needed and what data to return.
         """
 
         query = """
@@ -196,9 +180,8 @@ class ConversationModel:
         """
         rows = cassandra_client.execute(query, (conversation_id,))
         for row in rows:
-            print(f"Row: {row}")
             return {
-                "id": str(row.get("conversation_id")),
+                "id": row.get("conversation_id"),
                 "user1_id": row.get("sender_id"),
                 "user2_id": row.get("recipient_id"),
                 "last_message_at": str(unix_time_from_uuid1(row.get("message_id"))),
