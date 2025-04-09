@@ -1,7 +1,3 @@
-"""
-Script to generate test data for the Messenger application.
-This script is a skeleton for students to implement.
-"""
 import os
 import uuid
 import logging

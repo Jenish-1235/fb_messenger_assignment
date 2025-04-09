@@ -1,6 +1,3 @@
-"""
-Script to initialize Cassandra keyspace and tables for the Messenger application.
-"""
 import os
 import time
 import logging
@@ -20,7 +17,7 @@ def wait_for_cassandra():
     logger.info("Waiting for Cassandra to be ready...")
     cluster = None
     
-    for _ in range(10):  # Try 10 times
+    for _ in range(10):
         try:
             cluster = Cluster([CASSANDRA_HOST])
             session = cluster.connect()
@@ -28,21 +25,13 @@ def wait_for_cassandra():
             return cluster
         except Exception as e:
             logger.warning(f"Cassandra not ready yet: {str(e)}")
-            time.sleep(5)  # Wait 5 seconds before trying again
+            time.sleep(5) 
     
     logger.error("Failed to connect to Cassandra after multiple attempts.")
     raise Exception("Could not connect to Cassandra")
 
 def create_keyspace(session):
-    """
-    Create the keyspace if it doesn't exist.
-    
-    This is where students will define the keyspace configuration.
-    """
     logger.info(f"Creating keyspace {CASSANDRA_KEYSPACE} if it doesn't exist...")
-    
-    # TODO: Students should implement keyspace creation
-    # Hint: Consider replication strategy and factor for a distributed database
     query = f"""
     CREATE KEYSPACE IF NOT EXISTS {CASSANDRA_KEYSPACE}
     WITH REPLICATION = {{ 'class': 'SimpleStrategy', 'replication_factor': 3 }};
@@ -52,19 +41,7 @@ def create_keyspace(session):
     logger.info(f"Keyspace {CASSANDRA_KEYSPACE} is ready.")
 
 def create_tables(session):
-    """
-    Create the tables for the application.
-    
-    This is where students will define the table schemas based on the requirements.
-    """
     logger.info("Creating tables...")
-    
-    # TODO: Students should implement table creation
-    # Hint: Consider:
-    # - What tables are needed to implement the required APIs?
-    # - What should be the primary keys and clustering columns?
-    # - How will you handle pagination and time-based queries?
-
     session.set_keyspace(CASSANDRA_KEYSPACE)
 
     user_table_query = f"""
