@@ -20,13 +20,33 @@ class MessageModel:
     - How to filter messages by timestamp
     """
     
-    # TODO: Implement the following methods
-    
     @staticmethod
     async def create_message(conversation_id: str, sender_id: int, recipient_id: int, message_text: str):
         """
         Create a new message and return it in the response format.
         """
+
+        message_id = uuid.uuid1()
+        query = """
+        INSERT INTO messages (conversation_id, message_id, sender_id, recipient_id, message_text)
+        VALUES (%s, %s, %s, %s, %s)
+        """
+        cassandra_client.execute(query, (conversation_id, message_id, sender_id, recipient_id, message_text))
+
+        update_user_conversations_query = """
+        INSERT INTO user_conversations (user_id, last_message_time, conversation_id, receiver_id, last_message)
+        VALUES (%s, %s, %s, %s, %s)
+        """
+        cassandra_client.execute(update_user_conversations_query, (sender_id, message_id, conversation_id, recipient_id, message_text))
+        cassandra_client.execute(update_user_conversations_query, (recipient_id, message_id, conversation_id, sender_id, message_text))
+        return {
+            "id": str(message_id),
+            "sender_id": sender_id,
+            "receiver_id": recipient_id,
+            "created_at": str(unix_time_from_uuid1(message_id)),
+            "conversation_id": conversation_id,
+            "content": message_text,
+        }
         
     
     @staticmethod
@@ -43,7 +63,6 @@ class MessageModel:
         
         all_messages = []
         for row in rows:
-            print(f"Row: {row}")
             message = {
                 "id": str(row.get('message_id')),
                 "sender_id": row.get('sender_id'),
@@ -83,7 +102,7 @@ class MessageModel:
         SELECT * FROM messages WHERE conversation_id = %s AND message_id < %s
         """
         rows = cassandra_client.execute(query, (conversation_id, time_stamp))
-        
+        print(rows)
         all_messages = []
         for row in rows:
             message = {
@@ -209,5 +228,5 @@ class ConversationModel:
             if rows:
                 return conversation_id
 
-        return f"{sender_id}_{receiver_id}"    
+        return str(sorted([sender_id, receiver_id])[0]) + "_" + str(sorted([sender_id, receiver_id])[1])
             

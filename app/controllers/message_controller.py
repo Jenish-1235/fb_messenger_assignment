@@ -3,6 +3,7 @@ from datetime import datetime
 from fastapi import HTTPException, status
 from app.db.cassandra_client import cassandra_client
 from app.models.cassandra_models import MessageModel
+from app.models.cassandra_models import ConversationModel
 
 from app.schemas.message import MessageCreate, MessageResponse, PaginatedMessageResponse
 
@@ -14,6 +15,7 @@ class MessageController:
 
     def __init__(self):
         self.message_model = MessageModel() # Placeholder for Cassandra client
+        self.conversation_model = ConversationModel()
     
     async def send_message(self, message_data: MessageCreate) -> MessageResponse:
         """
@@ -30,7 +32,7 @@ class MessageController:
         """
         # This is a stub - students will implement the actual logic
 
-        conversation_id = str(message_data.sender_id) + "_" + str(message_data.receiver_id)
+        conversation_id = await self.conversation_model.create_or_get_conversation(message_data.sender_id, message_data.receiver_id)
         return await self.message_model.create_message(
             conversation_id=conversation_id,
             sender_id=message_data.sender_id,
