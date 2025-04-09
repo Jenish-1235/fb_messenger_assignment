@@ -1,7 +1,3 @@
-"""
-Sample models for interacting with Cassandra tables.
-Students should implement these models based on their database schema design.
-"""
 import uuid
 from datetime import datetime
 from typing import List, Dict, Any, Optional
@@ -10,15 +6,6 @@ from cassandra.util import uuid_from_time, unix_time_from_uuid1
 from app.db.cassandra_client import cassandra_client
 
 class MessageModel:
-    """
-    Message model for interacting with the messages table.
-    Students will implement this as part of the assignment.
-    
-    They should consider:
-    - How to efficiently store and retrieve messages
-    - How to handle pagination of results
-    - How to filter messages by timestamp
-    """
     
     @staticmethod
     async def create_message(conversation_id: str, sender_id: int, recipient_id: int, message_text: str):
@@ -51,11 +38,7 @@ class MessageModel:
     
     @staticmethod
     async def get_conversation_messages(conversation_id: str, page: int, limit: int):
-        """
-        Get messages for a conversation with pagination.
-        Cassandra doesn't support OFFSET, so we fetch all and slice in memory.
-        Best for small conversations or prototyping.
-        """
+
         query = """
         SELECT * FROM messages WHERE conversation_id = %s
         """
@@ -93,8 +76,6 @@ class MessageModel:
     async def get_messages_before_timestamp(conversation_id: str, before_timestamp: datetime, page: int, limit: int):
         """
         Get messages before a timestamp with pagination.
-        
-        Students should decide how to implement filtering by timestamp with pagination.
         """
 
         time_stamp = uuid_from_time(before_timestamp)
@@ -134,17 +115,6 @@ class MessageModel:
 
 
 class ConversationModel:
-    """
-    Conversation model for interacting with the conversations-related tables.
-    Students will implement this as part of the assignment.
-    
-    They should consider:
-    - How to efficiently store and retrieve conversations for a user
-    - How to handle pagination of results
-    - How to optimize for the most recent conversations
-    """
-    
-    # TODO: Implement the following methods
     
     @staticmethod
     async def get_user_conversations(user_id: int, page: int = 1, limit: int = 20):

@@ -1,7 +1,3 @@
-"""
-Cassandra client for the Messenger application.
-This provides a connection to the Cassandra database.
-"""
 import os
 import uuid
 from typing import List, Dict, Any, Optional
@@ -15,7 +11,6 @@ from cassandra.query import SimpleStatement, dict_factory
 logger = logging.getLogger(__name__)
 
 class CassandraClient:
-    """Singleton Cassandra client for the application."""
     
     _instance = None
     
@@ -26,7 +21,7 @@ class CassandraClient:
         return cls._instance
     
     def __init__(self):
-        """Initialize the Cassandra connection."""
+
         if self._initialized:
             return
         
@@ -41,7 +36,7 @@ class CassandraClient:
         self._initialized = True
     
     def connect(self) -> None:
-        """Connect to the Cassandra cluster."""
+
         try:
             self.cluster = Cluster([self.host])
             self.session = self.cluster.connect(self.keyspace)
@@ -52,22 +47,12 @@ class CassandraClient:
             raise
     
     def close(self) -> None:
-        """Close the Cassandra connection."""
+
         if self.cluster:
             self.cluster.shutdown()
             logger.info("Cassandra connection closed")
     
     def execute(self, query: str, params: dict = None) -> List[Dict[str, Any]]:
-        """
-        Execute a CQL query.
-        
-        Args:
-            query: The CQL query string
-            params: The parameters for the query
-            
-        Returns:
-            List of rows as dictionaries
-        """
         if not self.session:
             self.connect()
         
@@ -80,16 +65,6 @@ class CassandraClient:
             raise
     
     def execute_async(self, query: str, params: dict = None):
-        """
-        Execute a CQL query asynchronously.
-        
-        Args:
-            query: The CQL query string
-            params: The parameters for the query
-            
-        Returns:
-            Async result object
-        """
         if not self.session:
             self.connect()
         
@@ -101,7 +76,6 @@ class CassandraClient:
             raise
     
     def get_session(self) -> Session:
-        """Get the Cassandra session."""
         if not self.session:
             self.connect()
         return self.session
